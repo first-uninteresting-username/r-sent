@@ -166,21 +166,30 @@ impl Fonts {
 
     /// Searches all system faces for one covering `c` and appends it to the fontset.
     fn search_system(&mut self, c: char) -> Option<usize> {
-        let mut candidates: Vec<&fontdb::FaceInfo> = self
-            .db
-            .faces()
-            .filter(|f| !self.in_set.contains(&f.id))
-            .collect();
-        // Prefer regular, upright faces.
-        candidates.sort_by_key(|f| (f.style != Style::Normal, f.weight.0.abs_diff(400)));
-        let id = candidates.into_iter().map(|f| f.id).find(|&id| {
-            self.db
-                .with_face_data(id, |data, index| {
-                    FontRef::from_index(data, index as usize)
-                        .is_some_and(|f| f.charmap().map(c) != 0)
+        let emoji = is_emoji(c);
+        let mut best: Option<((u8, bool, u16), ID)> = None;
+        for info in self.db.faces().filter(|f| !self.in_set.contains(&f.id)) {
+            let family = info.families.first().map_or("", |(n, _)| n.as_str());
+            let Some(color) = self
+                .db
+                .with_face_data(info.id, |data, index| {
+                    let font = FontRef::from_index(data, index as usize)?;
+                    (font.charmap().map(c) != 0).then(|| has_color_tables(&font))
                 })
-                .unwrap_or(false)
-        })?;
+                .flatten()
+            else {
+                continue;
+            };
+            let rank = (
+                fallback_tier(family, color, emoji),
+                info.style != Style::Normal,
+                info.weight.0.abs_diff(400),
+            );
+            if best.as_ref().is_none_or(|(r, _)| rank < *r) {
+                best = Some((rank, info.id));
+            }
+        }
+        let (_, id) = best?;
         let face = Face::load(&self.db, id)?;
         self.in_set.insert(id);
         self.faces.push(face);
@@ -281,4 +290,55 @@ fn find_family(db: &Database, wanted: &str) -> Option<String> {
             name.eq_ignore_ascii_case(wanted) || name.to_lowercase() == wanted.to_lowercase()
         })
         .map(|(name, _)| name.clone())
+}
+
+/// Whether `c` is usually shown as an emoji.
+fn is_emoji(c: char) -> bool {
+    matches!(u32::from(c), 0x1F000..=0x1FAFF | 0x2600..=0x27BF | 0x2B00..=0x2BFF)
+}
+
+fn has_color_tables(font: &FontRef) -> bool {
+    [b"COLR", b"CBDT", b"sbix"]
+        .iter()
+        .any(|t| font.table(swash::tag_from_bytes(t)).is_some())
+}
+
+/// Ranking of a fallback face (lower is better): colour fonts first for emoji, "last resort"
+/// fonts such as Unifont at the very end.
+fn fallback_tier(family: &str, color: bool, emoji: bool) -> u8 {
+    let family = family.to_lowercase();
+    if family.contains("unifont") || family.contains("last resort") {
+        3
+    } else if emoji && color {
+        0
+    } else if emoji || !color {
+        1
+    } else {
+        2
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fallback_ranking() {
+        assert!(
+            fallback_tier("Noto Color Emoji", true, true)
+                < fallback_tier("DejaVu Sans", false, true)
+        );
+        assert!(
+            fallback_tier("Noto Sans CJK JP", false, false)
+                < fallback_tier("Unifont", false, false)
+        );
+        assert!(
+            fallback_tier("Noto Sans CJK JP", false, false)
+                < fallback_tier("Noto Color Emoji", true, false)
+        );
+        assert!(
+            fallback_tier("Unifont Upper", false, true) > fallback_tier("Symbola", false, true)
+        );
+        assert!(is_emoji('🦀') && is_emoji('☺') && !is_emoji('日') && !is_emoji('a'));
+    }
 }

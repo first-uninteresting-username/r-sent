@@ -1,0 +1,199 @@
+.Dd November 5, 2026
+.Dt R-SENT 1
+.Os
+.Sh NAME
+.Nm r-sent
+.Nd simple plaintext presentation tool for Wayland
+.Sh SYNOPSIS
+.Nm
+.Op Fl v
+.Op Ar file
+.Op Ar config
+.Sh DESCRIPTION
+.Nm
+shows a presentation described in a plain text file in a single Wayland window,
+fullscreen by default.
+Every paragraph is one slide.
+Text is drawn at the largest font size that fits and centred; images are scaled
+to fit and centred.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl v
+Print the version and exit.
+.It Fl \-
+End option parsing; the next argument is the file even if it starts with
+.Ql - .
+.It Ar file
+The presentation.
+If omitted or
+.Ql - ,
+the presentation is read from standard input.
+.It Ar config
+A configuration file whose keys override the defaults (see
+.Sx CONFIGURATION ) .
+.El
+.Sh FILE FORMAT
+The file is split into lines; a trailing carriage return is removed and invalid
+UTF-8 is replaced by U+FFFD.
+.Bl -bullet
+.It
+An empty line ends the current slide.
+Consecutive empty lines collapse.
+A line containing only whitespace is content, not a separator.
+.It
+A line starting with
+.Ql #
+is a comment and is dropped.
+It does not end the current slide.
+.It
+If the first line of a slide starts with
+.Ql @ ,
+the slide is an image slide; the rest of the line is the image path, taken
+verbatim.
+Further lines of an image slide are not drawn.
+A line consisting of only
+.Ql @
+is text.
+Relative paths are resolved against the directory containing the presentation
+(the current directory for standard input).
+.It
+One leading backslash is removed from every line, so
+.Ql \e@x.png
+and
+.Ql \e#x
+are text lines, and a line consisting of a single backslash is an empty line
+(an empty slide).
+.El
+.Pp
+Images are decoded natively (PNG, JPEG, GIF, BMP, WebP, farbfeld) unless their
+path matches a configured filter, in which case the filter command converts
+them first.
+Transparent images are blended with the background colour.
+.Sh KEY AND MOUSE BINDINGS
+The default bindings are:
+.Bl -tag -width "Right, Return, space, l, j, Down, Next, n"
+.It Escape , q
+Quit.
+.It Right , Return , space , l , j , Down , Next , n
+Next slide.
+.It Left , BackSpace , h , k , Up , Prior , p
+Previous slide.
+.It r
+Reload the presentation file and its images.
+On error the previous presentation is kept.
+Not available for standard input.
+.It f
+Toggle fullscreen.
+.It "left button, scroll down"
+Next slide.
+.It "right button, scroll up"
+Previous slide.
+.El
+.Pp
+Keys are matched by the keysym at shift level 0 of the active layout, so
+modifiers are ignored.
+Holding a key repeats it.
+.Sh CONFIGURATION
+The default configuration is
+.Pa config.def.toml
+in the source tree.
+At build time it is copied to
+.Pa config.toml
+(if that does not exist), validated and embedded in the binary.
+At run time, keys from
+.Pa $XDG_CONFIG_HOME/r-sent/config.toml
+(or
+.Pa ~/.config/r-sent/config.toml )
+and then from the
+.Ar config
+argument override the embedded configuration.
+Tables are merged key by key; the arrays
+.Ic fallbacks ,
+.Ic keys ,
+.Ic mouse
+and
+.Ic filters
+replace the previous array entirely.
+Unknown keys are errors.
+.Bl -tag -width Ds
+.It Ic fonts.fallbacks
+Font families tried in order for every glyph (non-empty).
+Characters not covered by any of them are looked up in all installed fonts.
+.It Ic fonts.scales , Ic fonts.base_size , Ic fonts.scale_factor
+Available font sizes: scale
+.Va i
+is
+.Sy floor(base_size * scale_factor ^ i)
+points, for
+.Va i
+in 0 to scales\-1 (scales 1..256, base_size > 0, scale_factor \(>= 1).
+.It Ic colors.foreground , Ic colors.background
+Colours as
+.Ql #RRGGBB
+or
+.Ql #RGB .
+.It Ic window.fullscreen
+Start fullscreen.
+.It Ic layout.line_spacing
+Distance between baselines as a multiple of the font height (> 0).
+.It Ic layout.usable_width , Ic layout.usable_height
+Fraction of the window content may use, in (0, 1].
+.It Ic keys
+Array of
+.Brq Ic key , Ic action , Op Ic arg ,
+where
+.Ic key
+is an XKB keysym name.
+.It Ic mouse
+Array of
+.Brq Ic button , Ic action , Op Ic arg ,
+where
+.Ic button
+is one of
+.Ql left ,
+.Ql middle ,
+.Ql right ,
+.Ql scroll-up ,
+.Ql scroll-down .
+.It Ic filters
+Array of
+.Brq Ic regex , Ic command .
+The first filter whose regex matches the image path (case-insensitively) is
+used: the command is run with
+.Ql sh -c ,
+receives the image on standard input and must write an image to standard
+output.
+.El
+.Pp
+Actions are
+.Ql quit ,
+.Ql advance
+(with an integer
+.Ic arg
+giving the number of slides to move),
+.Ql reload
+and
+.Ql toggle-fullscreen .
+.Sh EXIT STATUS
+.Ex -std
+Fatal errors are printed as a single line starting with
+.Ql r-sent:\& .
+.Sh EXAMPLES
+.Bd -literal -offset indent
+r-sent
+
+@diagram.png
+
+why plain text
+- diffable
+- no tooling
+# comment, not shown
+\e# shown, starts with a hash
+.Ed
+.Pp
+Show a presentation, or one generated on the fly:
+.Dl $ r-sent talk.txt
+.Dl $ printf 'hello\en\enworld\en' | r-sent
+.Sh SEE ALSO
+.Xr sent 1

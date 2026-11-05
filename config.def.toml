@@ -1,0 +1,66 @@
+# r-sent configuration.
+# Copy to config.toml and rebuild, or put overrides in ~/.config/r-sent/config.toml.
+
+# Top-level arrays must come before the first [table] header in TOML.
+
+# Pointer bindings. button: "left", "middle", "right", "scroll-up", "scroll-down".
+mouse = [
+  { button = "left",        action = "advance", arg = 1 },
+  { button = "right",       action = "advance", arg = -1 },
+  { button = "scroll-up",   action = "advance", arg = -1 },
+  { button = "scroll-down", action = "advance", arg = 1 },
+]
+
+# Key bindings. key: XKB keysym name (as accepted by xkb_keysym_from_name).
+keys = [
+  { key = "Escape",    action = "quit" },
+  { key = "q",         action = "quit" },
+  { key = "Right",     action = "advance", arg = 1 },
+  { key = "Left",      action = "advance", arg = -1 },
+  { key = "Return",    action = "advance", arg = 1 },
+  { key = "space",     action = "advance", arg = 1 },
+  { key = "BackSpace", action = "advance", arg = -1 },
+  { key = "l",         action = "advance", arg = 1 },
+  { key = "h",         action = "advance", arg = -1 },
+  { key = "j",         action = "advance", arg = 1 },
+  { key = "k",         action = "advance", arg = -1 },
+  { key = "Down",      action = "advance", arg = 1 },
+  { key = "Up",        action = "advance", arg = -1 },
+  { key = "Next",      action = "advance", arg = 1 },
+  { key = "Prior",     action = "advance", arg = -1 },
+  { key = "n",         action = "advance", arg = 1 },
+  { key = "p",         action = "advance", arg = -1 },
+  { key = "r",         action = "reload" },
+  { key = "f",         action = "toggle-fullscreen" },
+]
+
+# Image filters, tried in order; the first whose regex matches the image path is used.
+# The command runs via `sh -c`, gets the image file on stdin and must write an image
+# to stdout. Images matching no filter are decoded natively.
+filters = [
+  { regex = '\.ff\.bz2$', command = "bunzip2" },
+]
+
+[fonts]
+# Font families tried in order for every glyph.
+fallbacks = ["dejavu sans", "roboto", "ubuntu"]
+# Number of font sizes available for fitting.
+scales = 42
+# Size of scale i, in points: floor(base_size * scale_factor ^ i), i in [0, scales-1].
+base_size = 10.0
+scale_factor = 1.1288
+
+[colors]
+foreground = "#000000"
+background = "#FFFFFF"
+
+[window]
+# Start fullscreen. If false, the compositor picks the size (default 1280x720 if it doesn't).
+fullscreen = true
+
+[layout]
+# Distance between baselines, as a multiple of the font height.
+line_spacing = 1.4
+# Fraction of the window that content may use at most.
+usable_width = 0.75
+usable_height = 0.75

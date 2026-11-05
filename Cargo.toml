@@ -2,5 +2,29 @@
 name = "r-sent"
 version = "0.1.0"
 edition = "2024"
+description = "Simple plaintext presentation tool for Wayland"
+license-file = "LICENSE"
+build = "build.rs"
 
 [dependencies]
+fontdb = "0.24.0"
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "gif", "ff", "bmp", "webp"] }
+regex = "1.13.1"
+serde = { version = "1.0.229", features = ["derive"] }
+smithay-client-toolkit = { version = "0.21.1", default-features = false, features = ["calloop", "xkbcommon"] }
+swash = "0.2.10"
+thiserror = "2.0.21"
+toml = "1.2.0"
+xkbcommon = { version = "0.8", default-features = false, features = ["wayland"] }
+xkeysym = "0.2.1"
+
+[build-dependencies]
+regex = "1.13.1"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.2.0"
+xkbcommon = { version = "0.8", default-features = false }
+xkeysym = "0.2.1"
+
+[profile.release]
+lto = true
+codegen-units = 1

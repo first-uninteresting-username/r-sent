@@ -1,0 +1,41 @@
+# r-sent demo presentation. Every paragraph is one slide.
+# Lines starting with '#' are comments; they never end a slide.
+r-sent
+
+plain text slides
+scaled to fit
+
+why plain text
+- diffable
+# a comment inside a paragraph is dropped
+- no tooling
+- no markup
+
+@diagram.png
+this line belongs to the image slide but is never drawn
+
+# images may be transparent; they are blended with the background colour
+@transparent.png
+
+# compressed farbfeld, decoded through the bunzip2 filter from the default config
+@gradient.ff.bz2
+
+\# escaped: this line starts with a hash
+\@escaped.png is text, not an image
+\\ a line starting with one backslash
+
+# a lone backslash is an empty line: this slide is empty
+\
+
+@
+a lone '@' is text
+
+wide Unicode → ½ ∑ λ — 日本語 — emoji 🦀🎉
+
+this is a very long line that does not fit even at the smallest font size so it gets truncated with an ellipsis when the window is narrow enough, which is exactly what we want to demonstrate here
+
+whitespace-only lines are content:
+   
+(the line above has spaces)
+
+thanks!

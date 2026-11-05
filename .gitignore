@@ -38,3 +38,8 @@ devenv.local.yaml
 # Added by cargo
 
 /target
+
+# User configuration copy (embedded at build time)
+/config.toml
+# Nix build result
+result
